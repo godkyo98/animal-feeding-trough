@@ -19,7 +19,6 @@ public class AnimalFeedingTroughModForge {
     public AnimalFeedingTroughModForge() {
         IEventBus eventBus = FMLJavaModLoadingContext.get().getModEventBus();
         EventBuses.registerModEventBus(AnimalFeedingTroughMod.MOD_ID, eventBus);
-      //  DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> () -> eventBus.addListener(this::setupClient));
         DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> (DistExecutor.SafeRunnable) () -> eventBus.addListener(this::setupClient));
 
         AnimalFeedingTroughMod.onInitialize();

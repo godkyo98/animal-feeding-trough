@@ -7,7 +7,7 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.neoforged.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.neoforged.fml.loading.FMLEnvironment;
 import slexom.animal_feeding_trough.platform.common.AnimalFeedingTroughMod;
 import slexom.animal_feeding_trough.platform.common.screen.FeedingTroughScreen;
 
@@ -15,7 +15,9 @@ import slexom.animal_feeding_trough.platform.common.screen.FeedingTroughScreen;
 public class AnimalFeedingTroughModNeoForge {
 
 	public AnimalFeedingTroughModNeoForge(IEventBus modEventBus) {
- 		modEventBus.addListener(this::setupClient);
+		if (FMLEnvironment.dist == Dist.CLIENT) {
+			modEventBus.addListener(this::setupClient);
+		}
 
 		AnimalFeedingTroughMod.onInitialize();
 	}
