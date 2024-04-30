@@ -8,7 +8,6 @@ import net.minecraft.entity.passive.AnimalEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.recipe.Ingredient;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -18,7 +17,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import slexom.animal_feeding_trough.platform.common.goal.entity.ai.SelfFeedGoal;
 
 import java.util.Arrays;
-import java.util.stream.Collectors;
+import java.util.function.Predicate;
 
 @Mixin(AnimalEntity.class)
 public class AnimalEntityMixin extends MobEntity {
@@ -31,28 +30,34 @@ public class AnimalEntityMixin extends MobEntity {
 
     @Inject(method = "<init>", at = @At("TAIL"))
     private void AFTAddSelfFeedingGoal(EntityType<? extends MobEntity> entityType, World world, CallbackInfo ci) {
-        if (world != null && !world.isClient) {
-            ((GoalSelectorAccessor) this.goalSelector)
-                    .getGoals()
-                    .stream()
-                    .filter(prioritizedGoal -> prioritizedGoal.getGoal().getClass().equals(TemptGoal.class))
-                    .toList()
-                    .forEach(prioritizedGoal -> {
-                        TemptGoal goal = (TemptGoal) prioritizedGoal.getGoal();
-                        PathAwareEntity mob = ((TemptGoalAccessor) goal).getMob();
-                        double speed = ((TemptGoalAccessor) goal).getSpeed();
-                        Ingredient food = (((TemptGoalAccessor) goal).getFood());
-                        boolean hasForbiddenFood = false;
-                        for (ItemStack itemStack : FORBIDDEN_ITEMS) {
-                            if (food.test(itemStack)) {
-                                hasForbiddenFood = true;
-                                break;
-                            }
-                        }
-                        if (!hasForbiddenFood) {
-                            this.goalSelector.add(prioritizedGoal.getPriority() + 1, new SelfFeedGoal((AnimalEntity) mob, speed, food));
-                        }
-                    });
+        if (world == null) {
+            return;
         }
+
+        if (world.isClient) {
+            return;
+        }
+
+        ((GoalSelectorAccessor) this.goalSelector)
+                .getGoals()
+                .stream()
+                .filter(prioritizedGoal -> prioritizedGoal.getGoal().getClass().equals(TemptGoal.class))
+                .toList()
+                .forEach(prioritizedGoal -> {
+                    TemptGoal goal = (TemptGoal) prioritizedGoal.getGoal();
+                    PathAwareEntity mob = ((TemptGoalAccessor) goal).getMob();
+                    double speed = ((TemptGoalAccessor) goal).getSpeed();
+                    Predicate<ItemStack> foodPredicate = (((TemptGoalAccessor) goal).getFoodPredicate());
+                    boolean hasForbiddenFood = false;
+                    for (ItemStack itemStack : FORBIDDEN_ITEMS) {
+                        if (foodPredicate.test(itemStack)) {
+                            hasForbiddenFood = true;
+                            break;
+                        }
+                    }
+                    if (!hasForbiddenFood) {
+                        this.goalSelector.add(prioritizedGoal.getPriority() + 1, new SelfFeedGoal((AnimalEntity) mob, speed, foodPredicate));
+                    }
+                });
     }
 }

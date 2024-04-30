@@ -11,6 +11,6 @@ rootProject.name = "animal_feeding_trough"
 
 include 'common'
 include 'fabric'
-include 'forge'
-include 'neoforge'
-include 'quilt'
+// include 'forge'
+// include 'neoforge'
+// include 'quilt'

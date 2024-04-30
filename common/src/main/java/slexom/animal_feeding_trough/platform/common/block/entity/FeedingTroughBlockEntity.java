@@ -9,6 +9,7 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventories;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.text.Text;
@@ -35,18 +36,20 @@ public class FeedingTroughBlockEntity extends BlockEntity implements NamedScreen
     }
 
     public static void tick(World world, BlockPos pos, BlockState state, FeedingTroughBlockEntity blockEntity) {
-        if (!world.isClient()) {
-            int count = blockEntity.getStack(0).getCount();
-            int newLevel = 0;
-            if (count > 0) {
-                newLevel = MathHelper.floor(blockEntity.getStack(0).getCount() / 16.0F) + 1;
-                newLevel = Math.min(newLevel, 4);
-            }
-            int currentLevel = state.get(FeedingTroughBlock.LEVEL);
-            if (currentLevel != newLevel) {
-                BlockState blockState = state.with(FeedingTroughBlock.LEVEL, newLevel);
-                world.setBlockState(pos, blockState, 3);
-            }
+        if (world.isClient()) {
+            return;
+        }
+
+        int count = blockEntity.getStack(0).getCount();
+        int newLevel = 0;
+        if (count > 0) {
+            newLevel = MathHelper.floor(blockEntity.getStack(0).getCount() / 16.0F) + 1;
+            newLevel = Math.min(newLevel, 4);
+        }
+        int currentLevel = state.get(FeedingTroughBlock.LEVEL);
+        if (currentLevel != newLevel) {
+            BlockState blockState = state.with(FeedingTroughBlock.LEVEL, newLevel);
+            world.setBlockState(pos, blockState, 3);
         }
     }
 
@@ -57,12 +60,16 @@ public class FeedingTroughBlockEntity extends BlockEntity implements NamedScreen
     }
 
     public void gatherExperienceOrbs(World world, BlockPos pos) {
-        if (playersAround(world, pos)) return;
+        if (playersAround(world, pos)) {
+            return;
+        }
 
         Box lookupArea = new Box(pos.getX() - 2, pos.getY() - 2, pos.getZ() - 2, pos.getX() + 2, pos.getY() + 2, pos.getZ() + 2);
         List<ExperienceOrbEntity> experienceOrbEntities = world.getEntitiesByClass(ExperienceOrbEntity.class, lookupArea, (e) -> true);
 
-        if (experienceOrbEntities.isEmpty()) return;
+        if (experienceOrbEntities.isEmpty()) {
+            return;
+        }
 
         experienceOrbEntities.forEach(orb -> {
             this.storedExp += orb.getExperienceAmount();
@@ -71,13 +78,14 @@ public class FeedingTroughBlockEntity extends BlockEntity implements NamedScreen
     }
 
     public void dropStoredXp(World world, PlayerEntity playerEntity) {
-        if (this.storedExp == 0) return;
+        if (this.storedExp == 0) {
+            return;
+        }
 
         ExperienceOrbEntity entity = new ExperienceOrbEntity(world, playerEntity.getX(), playerEntity.getY() + 0.5F, playerEntity.getZ(), this.storedExp);
         world.spawnEntity(entity);
         this.storedExp = 0;
     }
-
 
     @Override
     public Text getDisplayName() {
@@ -96,17 +104,17 @@ public class FeedingTroughBlockEntity extends BlockEntity implements NamedScreen
     }
 
     @Override
-    public void readNbt(NbtCompound tag) {
-        super.readNbt(tag);
-        Inventories.readNbt(tag, this.inventory);
-        this.storedExp = tag.getInt(NBT_STORED_EXP);
+    protected void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registryLookup) {
+        super.readNbt(nbt, registryLookup);
+        Inventories.readNbt(nbt, this.inventory, registryLookup);
+        this.storedExp = nbt.getInt(NBT_STORED_EXP);
     }
 
     @Override
-    public void writeNbt(NbtCompound tag) {
-        super.writeNbt(tag);
-        Inventories.writeNbt(tag, this.inventory);
-        tag.putInt(NBT_STORED_EXP, this.storedExp);
+    protected void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registryLookup) {
+        super.writeNbt(nbt, registryLookup);
+        Inventories.writeNbt(nbt, this.inventory, registryLookup);
+        nbt.putInt(NBT_STORED_EXP, this.storedExp);
     }
 
 }

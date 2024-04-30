@@ -8,14 +8,6 @@ import net.minecraft.util.collection.DefaultedList;
 
 public interface BlockEntityInventory extends Inventory {
 
-    static BlockEntityInventory of(DefaultedList<ItemStack> items) {
-        return () -> items;
-    }
-
-    static BlockEntityInventory ofSize(int size) {
-        return of(DefaultedList.ofSize(size, ItemStack.EMPTY));
-    }
-
     DefaultedList<ItemStack> getItems();
 
     @Override
@@ -66,10 +58,6 @@ public interface BlockEntityInventory extends Inventory {
         getItems().clear();
     }
 
-    @Override
-    default void markDirty() {
-        // Override if you want behavior.
-    }
 
     @Override
     default boolean canPlayerUse(PlayerEntity player) {

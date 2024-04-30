@@ -6,12 +6,13 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityTicker;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.screen.NamedScreenHandlerFactory;
+import net.minecraft.item.ItemStack;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.IntProperty;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
+import net.minecraft.util.ItemActionResult;
 import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
@@ -24,8 +25,8 @@ import slexom.animal_feeding_trough.platform.common.block.entity.FeedingTroughBl
 
 public class FeedingTroughBlock extends BlockWithEntity {
     public static final IntProperty LEVEL = IntProperty.of("level", 0, 4);
-    private static final VoxelShape SHAPE = Block.createCuboidShape(0.0D, 0.0D, 0.0D, 16.0D, 9.0D, 16.0D);
     public static final MapCodec<FeedingTroughBlock> CODEC = createCodec(FeedingTroughBlock::new);
+    private static final VoxelShape SHAPE = Block.createCuboidShape(0.0D, 0.0D, 0.0D, 16.0D, 9.0D, 16.0D);
 
     public FeedingTroughBlock(Settings settings) {
         super(settings);
@@ -35,6 +36,7 @@ public class FeedingTroughBlock extends BlockWithEntity {
     public MapCodec<FeedingTroughBlock> getCodec() {
         return CODEC;
     }
+
     @Override
     protected void appendProperties(StateManager.Builder<Block, BlockState> stateManager) {
         stateManager.add(LEVEL);
@@ -49,21 +51,26 @@ public class FeedingTroughBlock extends BlockWithEntity {
         return BlockRenderType.MODEL;
     }
 
-    public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
-        if (!world.isClient) {
+    protected ItemActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
+        BlockEntity blockEntity = world.getBlockEntity(pos);
+        if (blockEntity instanceof FeedingTroughBlockEntity feedingTroughBlockEntity) {
             if (player.isSneaking() && player.getStackInHand(hand).isEmpty()) {
-                BlockEntity blockEntity = world.getBlockEntity(pos);
-                if (blockEntity instanceof FeedingTroughBlockEntity feedingTroughBlockEntity) {
-                    feedingTroughBlockEntity.dropStoredXp(world, player);
-                }
-            } else {
-                NamedScreenHandlerFactory screenHandlerFactory = state.createScreenHandlerFactory(world, pos);
-                if (screenHandlerFactory != null) {
-                    player.openHandledScreen(screenHandlerFactory);
-                }
+                feedingTroughBlockEntity.dropStoredXp(world, player);
+
+                return ItemActionResult.success(world.isClient);
             }
         }
-        return ActionResult.SUCCESS;
+
+        return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+    }
+
+    public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
+        if (world.isClient) {
+            return ActionResult.SUCCESS;
+        } else {
+            player.openHandledScreen(state.createScreenHandlerFactory(world, pos));
+            return ActionResult.CONSUME;
+        }
     }
 
     @Override
@@ -74,6 +81,7 @@ public class FeedingTroughBlock extends BlockWithEntity {
                 ItemScatterer.spawn(world, pos, (FeedingTroughBlockEntity) blockEntity);
                 world.updateComparators(pos, this);
             }
+
             super.onStateReplaced(state, world, pos, newState, moved);
         }
     }
@@ -100,6 +108,7 @@ public class FeedingTroughBlock extends BlockWithEntity {
         if (world.isClient) {
             return null;
         }
+
         return validateTicker(type, AnimalFeedingTroughMod.FEEDING_TROUGH_BLOCK_ENTITY.get(), (World wld, BlockPos pos, BlockState st, FeedingTroughBlockEntity blockEntity) -> {
             FeedingTroughBlockEntity.tick(wld, pos, st, blockEntity);
             blockEntity.gatherExperienceOrbs(wld, pos);

@@ -4,23 +4,24 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.ai.goal.MoveToTargetPosGoal;
 import net.minecraft.entity.passive.AnimalEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.recipe.Ingredient;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldView;
 import slexom.animal_feeding_trough.platform.common.block.entity.FeedingTroughBlockEntity;
 
+import java.util.function.Predicate;
+
 public class SelfFeedGoal extends MoveToTargetPosGoal {
 
     protected final AnimalEntity mob;
-    private final Ingredient food;
+    private final Predicate<ItemStack> foodPredicate;
 
     private FeedingTroughBlockEntity feeder;
 
-    public SelfFeedGoal(AnimalEntity mob, double speed, Ingredient food) {
+    public SelfFeedGoal(AnimalEntity mob, double speed, Predicate<ItemStack> foodPredicate) {
         super(mob, speed, 8);
         this.mob = mob;
-        this.food = food;
+        this.foodPredicate = foodPredicate;
     }
 
     @Override
@@ -39,7 +40,7 @@ public class SelfFeedGoal extends MoveToTargetPosGoal {
     }
 
     private boolean hasCorrectFood(ItemStack itemStack) {
-        return this.food.test(itemStack);
+        return this.foodPredicate.test(itemStack);
     }
 
     @Override
